@@ -1,0 +1,31 @@
+[package]
+name = "nexus"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+
+[dependencies]
+crc32fast = "1.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+
+# Loom is only pulled in when the compiler is invoked with `--cfg loom`.
+# Typical usage:
+#     RUSTFLAGS="--cfg loom" cargo test --release --test phase12_loom_counters
+# See `.github/workflows/loom.yml` and `docs/evaluation.md`.
+[target.'cfg(loom)'.dependencies]
+loom = "0.7"
+
+[dev-dependencies]
+tempfile = "3.10"
+
+# Extra lints and settings are enabled in the [lints] table so they are in
+# effect for every local build and CI identically.
+[lints.rust]
+unsafe_code = "forbid"
+# Declare custom cfgs so `rustc --check-cfg` does not flag them.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+
+[lints.clippy]
+needless_return = "warn"

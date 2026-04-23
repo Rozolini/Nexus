@@ -1,0 +1,25 @@
+# Rust / Cargo
+target/
+**/*.rs.bk
+
+# Benchmark outputs
+bench-out/
+
+# Local temp dirs
+tmp/
+temp/
+
+# Environment files
+.env
+.env.*
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,52 @@
+name: Miri
+
+# Miri interprets the MIR to detect undefined behaviour: out-of-bounds,
+# uninitialised reads, invalid ptr provenance, data races, etc. It is slow,
+# so we only run it on the lib unit tests (pure logic: stats, codec,
+# planner math, graph math, benchmark aggregation) — not on the integration
+# test suite, which hits the filesystem.
+#
+# If you hit a "real filesystem" error inside Miri, either gate the
+# offending inline unit test with `#[cfg(not(miri))]` or move it to
+# `tests/` so it runs under the normal test workflow.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  # Also run nightly on schedule to catch UB regressions from toolchain
+  # updates independently of PR activity.
+  schedule:
+    - cron: "0 6 * * *"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  miri:
+    name: miri (lib unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install nightly + miri
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri, rust-src
+      - uses: Swatinem/rust-cache@v2
+      - name: miri setup
+        # Explicit `+nightly` — `dtolnay/rust-toolchain@nightly` installs
+        # the toolchain but some setups (e.g. after a cache restore or when
+        # a `rust-toolchain.toml` exists) leave `stable` as the default,
+        # which would try to invoke `cargo-miri` on stable and fail with
+        # "miri is not available for stable-...".
+        run: cargo +nightly miri setup
+      - name: miri test --lib
+        # `-Zmiri-disable-isolation` is required for any test that touches
+        # environment/time/RNG seeds via the OS. We leave isolation **on**
+        # to catch accidental reliance on host state. If a test fails due
+        # to isolation, gate it with `#[cfg(not(miri))]`.
+        env:
+          MIRIFLAGS: "-Zmiri-strict-provenance"
+        run: cargo +nightly miri test --lib --locked

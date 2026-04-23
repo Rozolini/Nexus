@@ -1,0 +1,9 @@
+# Phase 1 — local development defaults
+
+[data]
+# Directory is usually passed via EngineConfig::new(...)
+path = "./data"
+
+[storage]
+# Logical block size for metrics / diagnostics (bytes)
+block_size = 65536

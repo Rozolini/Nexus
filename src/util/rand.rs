@@ -1,0 +1,1 @@
+//! Random helpers (stub).

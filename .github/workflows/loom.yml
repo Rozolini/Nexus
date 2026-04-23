@@ -1,0 +1,39 @@
+name: Loom
+
+# Loom is a permutation tester for lock-free code. It re-runs each
+# `loom::model(...)` block under every legal schedule of the Rust memory
+# model, verifying the invariants hold.
+#
+# In this repo we Loom-check the concurrency contract of `EngineStats`
+# (monotonic counters updated by multiple writers, snapshotted by readers).
+# See `tests/phase12_loom_counters.rs` for the model.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  # Cap the exploration to keep CI under 5 minutes per run. Loom defaults
+  # are exponential; the models here are small enough that the default
+  # works, but we set a ceiling explicitly so a future model expansion
+  # doesn't silently time out.
+  LOOM_MAX_PREEMPTIONS: "3"
+
+jobs:
+  loom:
+    name: loom model checker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test (loom cfg)
+        env:
+          # `--cfg loom` is the canonical way to opt into loom's shim
+          # (see `[target.'cfg(loom)'.dependencies]` in Cargo.toml).
+          RUSTFLAGS: "--cfg loom"
+        run: cargo test --release --locked --test phase12_loom_counters
